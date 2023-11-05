@@ -1,0 +1,65 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
+}
+
+group 'com.hypherionmc'
+version '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    shadeMe
+    implementation.extendsFrom shadeMe
+}
+
+dependencies {
+    shadeMe 'org.ow2.asm:asm:9.2'
+    shadeMe 'org.ow2.asm:asm-commons:9.2'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+tasks.register('sourcesJar', Jar) {
+    archiveClassifier.set('sources')
+    from sourceSets.main.allJava
+}
+
+tasks.register('javadocJar', Jar) {
+    archiveClassifier.set('javadoc')
+    dependsOn 'javadoc'
+    from javadoc.destinationDir
+}
+
+shadowJar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    configurations = [project.configurations.getByName("shadeMe")]
+    archiveClassifier.set(null)
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact shadowJar
+            artifact sourcesJar
+            artifact javadocJar
+        }
+    }
+
+    repositories {
+        maven {
+            url System.getenv('MAVEN_URL')
+            credentials {
+                username System.getenv('MAVEN_USER')
+                password System.getenv('MAVEN_PASS')
+            }
+        }
+    }
+}
