@@ -43,7 +43,10 @@ final class DirectoryRelocatorTask {
 
     void processEntries() throws IOException {
         for (File entry : listAllFiles(inputDirectory)) {
-            String name = entry.getName();
+            String name = entry.getAbsolutePath().replace(inputDirectory.getAbsolutePath(), "");
+            if (name.startsWith("/") || name.startsWith("\\"))
+                name = name.substring(1);
+
             if (name.equals("META-INF/INDEX.LIST") || entry.isDirectory()) {
                 continue;
             }
@@ -79,7 +82,10 @@ final class DirectoryRelocatorTask {
     }
 
     private void processEntry(File entry, InputStream inputStream) throws IOException {
-        String name = entry.getAbsolutePath();
+        String name = entry.getAbsolutePath().replace(inputDirectory.getAbsolutePath(), "");
+        if (name.startsWith("/") || name.startsWith("\\"))
+            name = name.substring(1);
+
         String mappedName = this.remapper.map(name);
 
         // ensure the parent directory structure exists for the entry.
@@ -115,8 +121,8 @@ final class DirectoryRelocatorTask {
     }
 
     private void processResource(String name, InputStream entryIn) throws IOException {
-        File file = new File(name);
-        File tmpFile = new File(name + ".tmp");
+        File file = new File(inputDirectory, name);
+        File tmpFile = new File(inputDirectory, name + ".tmp");
         FileOutputStream outputStream = new FileOutputStream(tmpFile);
 
         copy(entryIn, outputStream);
@@ -141,8 +147,8 @@ final class DirectoryRelocatorTask {
 
         // Need to take the .class off for remapping evaluation
         String mappedName = this.remapper.map(name.substring(0, name.indexOf('.')));
-        File outName = new File(mappedName + ".class");
-        File tmpFile = new File(mappedName + ".tmp");
+        File outName = new File(inputDirectory, mappedName + ".class");
+        File tmpFile = new File(inputDirectory, mappedName + ".tmp");
         FileOutputStream outputStream = new FileOutputStream(tmpFile);
 
         // Now we put it back on so the class file is written out with the right extension.
@@ -168,8 +174,8 @@ final class DirectoryRelocatorTask {
             out.getEntries().put(entry.getKey(), outAttributes);
         }
 
-        File outFile = new File(name);
-        File tempFile = new File(name + ".tmp");
+        File outFile = new File(inputDirectory, name);
+        File tempFile = new File(inputDirectory, name + ".tmp");
         FileOutputStream outputStream = new FileOutputStream(tempFile);
         out.write(outputStream);
         outputStream.close();
